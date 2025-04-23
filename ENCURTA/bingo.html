@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>SORTEADOR DE BINGO</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            padding: 20px;
+            margin: 9%;
+            margin-top: 0%;
+            margin-bottom: 0%;
+            min-width: 10%;
+            max-width: 100%;
+            min-height: 10%;
+            max-height: 100%;
+        }
+        .container {
+            display: flex;
+            flex-wrap:nowrap;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            min-width: 8%;
+            max-width: 100%;
+            min-height: 10%;
+            max-height: 100%;
+            padding: 0%;
+
+        }
+        .left-section {
+            display: flex;
+            min-width: 50%;
+            max-width: 70%;
+            min-height: 40%;
+            max-height: 40%;
+            padding: 3%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .right-section {
+            flex: 1;
+            min-width: 50%;
+            max-width: 70%;
+            min-height: 40%;
+            max-height: 40%;
+            padding: 3%;
+            background-color: #f9f9f900;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            width: 100%;
+            font-weight: 700;
+        }
+        #numero-sorteado {
+            font-size: 15vw;
+            max-font-size: 90px;
+            min-font-size: 50px;
+            color: #7048e8;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 900;
+            width: 100%;
+        }
+        .button-container {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+        #btn-sortear, #btn-reiniciar {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #btn-sortear {
+            background-color: #7048e8;
+            color: white;
+        }
+        #btn-reiniciar {
+            background-color: #333;
+            color: white;
+        }
+        .bingo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(0.1%, 9.2%));
+            gap: 5px;
+            min-width: 50%;
+            max-width: 70%;
+            min-height: 50%;
+            max-height: 50%;
+            padding: 3%;
+
+        }
+        .bingo-grid > div {
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2vw;
+            min-font-size: 14px;
+            max-font-size: 24px;
+            font-weight: bold;
+            aspect-ratio: 1 / 1;
+        }
+        .bingo-grid > div.sorteado {
+            background-color: #7048e8;
+            color: white;
+        }
+        #numero-sorteado.animacao {
+            animation: destaque 0.5s;
+        }
+        @keyframes destaque {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .left-section, .right-section {
+                width: 100%;
+                min-width: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left-section">
+            <h1>SORTEADOR DE BINGO</h1>
+            <div id="numero-sorteado">-</div>
+            <div class="button-container">
+                <button id="btn-sortear" onclick="sortearNumero()">Sortear Número</button>
+                <button id="btn-reiniciar" onclick="location.reload()">Reiniciar Bingo</button>
+            </div>
+        </div>
+        <div class="right-section">
+            <div class="bingo-grid">
+                <!-- Grid de números será gerada aqui -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let numerosSorteados = [];
+        const elementoNumeroSorteado = document.getElementById('numero-sorteado');
+        const elementoBingoGrid = document.querySelector('.bingo-grid');
+        
+        function sortearNumero() {
+            // Gerar todos os números possíveis (1-90)
+            const todoNumeros = Array.from({length: 90}, (_, i) => i + 1);
+            
+            // Filtrar números já sorteados
+            const numerosDisponiveis = todoNumeros.filter(numero => !numerosSorteados.includes(numero));
+            
+            if (numerosDisponiveis.length === 0) {
+                alert("Todos os números já foram sorteados!");
+                return;
+            }
+
+            // Sortear número
+            const indiceSorteado = Math.floor(Math.random() * numerosDisponiveis.length);
+            const numeroSorteado = numerosDisponiveis[indiceSorteado];
+            
+            // Adicionar à lista de sorteados
+            numerosSorteados.push(numeroSorteado);
+
+            // Atualizar grade de números
+            elementoBingoGrid.innerHTML = '';
+            for (let i = 1; i <= 90; i++) {
+                const numero = i;
+                const elemento = document.createElement('div');
+                elemento.textContent = numero;
+                if (numerosSorteados.includes(numero)) {
+                    elemento.classList.add('sorteado');
+                }
+                elementoBingoGrid.appendChild(elemento);
+            }
+
+            // Text-to-Speech
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(`Número ${numeroSorteado}`);
+                utterance.lang = 'pt-BR';
+                window.speechSynthesis.speak(utterance);
+            }
+
+            // Atualizar display
+            elementoNumeroSorteado.textContent = numeroSorteado;
+            elementoNumeroSorteado.classList.add('animacao');
+
+            // Remover animação após 500ms
+            setTimeout(() => {
+                elementoNumeroSorteado.classList.remove('animacao');
+            }, 500);
+        }
+
+        function reiniciarBingo() {
+            numerosSorteados = [];
+            elementoNumeroSorteado.textContent = '-';
+            atualizarGradeBingo; // Atualizar grade de números
+        }
+
+        // Inicializar grade de bingo
+        function atualizarGradeBingo() {
+            elementoBingoGrid.innerHTML = '';
+            for (let i = 1; i <= 90; i++) {
+                const elemento = document.createElement('div');
+                elemento.textContent = i;
+                elementoBingoGrid.appendChild(elemento);
+            }
+        }
+
+        atualizarGradeBingo();
+    </script>
+</body>
+</html>
