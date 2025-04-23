@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Caça-Palavras</title>
     <style>
         body {
@@ -10,36 +11,43 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
             background-color: #f0f0f0;
+            padding: 10px;
         }
         .h1-box {
-            width: 65vw;
+            width: 100%;
+            max-width: 600px;
             margin: 0.5vw;
             background-color: #1e1e1e;
             border-radius: 1vw;
         }
         h1 {
             display: flex;
-            width: 65vw;
+            width: 100%;
             margin: 0;
             font-weight: 800;
             justify-content: center;
             color: #d9d9d9;
             padding: 0.01vw;
+            font-size: clamp(1.5rem, 4vw, 2rem);
         }
         .game-container {
             display: flex;
+            flex-direction: row;
             gap: 20px;
             padding: 2vw;
             background-color: #fff;
             border-radius: 1vw;
+            max-width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
         }
         .word-grid {
             display: grid;
-            grid-template-columns: repeat(11, 40px);
-            grid-gap: 6.5px;
+            grid-template-columns: repeat(11, minmax(25px, 40px));
+            grid-gap: 5px;
             background-color: #1e1e1e;
             border-radius: 1vw;
             padding: 1vw;
@@ -47,16 +55,17 @@
         .grid-cell {
             font-weight: 700;
             color: #1e1e1e;
-            width: 40px;
-            height: 40px;
+            width: 100%;
+            aspect-ratio: 1/1;
             background-color: #d9d9d9;
             border-radius: 0.5vw;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 20px;
+            font-size: clamp(14px, 4vw, 20px);
             cursor: pointer;
             user-select: none;
+            touch-action: none;
         }
         .grid-cell.selected {
             color: #d9d9d9;
@@ -71,8 +80,8 @@
             gap: 10px;
         }
         .image-box {
-            width: 120px;
-            height: 120px;
+            width: 100px;
+            height: 100px;
             border: 3px solid #333;
             border-radius: 1vw;
             display: flex;
@@ -83,8 +92,8 @@
         .image-box.found::after {
             content: '';
             position: absolute;
-            width: 120px;
-            height: 120px;
+            width: 100%;
+            height: 100%;
             border-radius: 0.9vw;
             color: rgb(36, 242, 0);
             background-color: #7048e8a1;
@@ -95,8 +104,26 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            border: 3px solid #333;
-            border-radius: 1vw;
+            border-radius: 0.7vw;
+        }
+        
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+            }
+            .images-container {
+                grid-template-columns: repeat(5, 1fr);
+            }
+            .image-box {
+                width: 60px;
+                height: 60px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .images-container {
+                grid-template-columns: repeat(3, 1fr);
+            }
         }
     </style>
 </head>
@@ -143,7 +170,7 @@
                 box.setAttribute('data-word', WORDS[i]);
 
                 var img = document.createElement('img');
-                img.src = 'img/' + WORDS[i] + '.webp';
+                img.src = '/img/' + WORDS[i] + '.webp';
                 img.alt = WORDS[i];
 
                 box.appendChild(img);
@@ -154,24 +181,57 @@
         function initGame() {
             var selectedCells = [];
             var foundWords = [];
+            var isSelecting = false;
+            var wordGrid = document.getElementById('wordGrid');
 
-            document.getElementById('wordGrid').addEventListener('mousedown', function(e) {
-                if (e.target.classList.contains('grid-cell')) {
-                    selectedCells = [e.target];
-                    e.target.classList.add('selected');
+            // Função para começar a seleção
+            function startSelection(e) {
+                isSelecting = true;
+                selectedCells = [];
+                
+                // Identificar a célula clicada (mouse ou touch)
+                var cell = null;
+                if (e.type === 'mousedown') {
+                    cell = e.target;
+                } else if (e.type === 'touchstart') {
+                    e.preventDefault(); // Previne o zoom e outros comportamentos padrão do touch
+                    var touch = e.touches[0];
+                    cell = document.elementFromPoint(touch.clientX, touch.clientY);
                 }
-            });
+                
+                if (cell && cell.classList.contains('grid-cell')) {
+                    selectedCells.push(cell);
+                    cell.classList.add('selected');
+                }
+            }
 
-            document.getElementById('wordGrid').addEventListener('mouseover', function(e) {
-                if (selectedCells.length > 0 && e.target.classList.contains('grid-cell')) {
-                    if (selectedCells.indexOf(e.target) === -1) {
-                        e.target.classList.add('selected');
-                        selectedCells.push(e.target);
+            // Função para continuar a seleção
+            function continueSelection(e) {
+                if (!isSelecting) return;
+                
+                // Identificar a célula (mouse ou touch)
+                var cell = null;
+                if (e.type === 'mousemove') {
+                    cell = e.target;
+                } else if (e.type === 'touchmove') {
+                    e.preventDefault();
+                    var touch = e.touches[0];
+                    cell = document.elementFromPoint(touch.clientX, touch.clientY);
+                }
+                
+                if (cell && cell.classList.contains('grid-cell')) {
+                    if (selectedCells.indexOf(cell) === -1) {
+                        selectedCells.push(cell);
+                        cell.classList.add('selected');
                     }
                 }
-            });
+            }
 
-            document.addEventListener('mouseup', function() {
+            // Função para finalizar a seleção
+            function endSelection() {
+                if (!isSelecting) return;
+                isSelecting = false;
+                
                 if (selectedCells.length > 0) {
                     var selectedWord = selectedCells.map(function(cell) { 
                         return cell.textContent; 
@@ -179,8 +239,10 @@
 
                     var reversedWord = selectedWord.split('').reverse().join('');
 
+                    var wordFound = false;
                     for (var i = 0; i < WORDS.length; i++) {
                         if (selectedWord === WORDS[i] || reversedWord === WORDS[i]) {
+                            wordFound = true;
                             foundWords.push(WORDS[i]);
 
                             selectedCells.forEach(function(cell) {
@@ -196,16 +258,32 @@
                         }
                     }
 
-                    if (foundWords.length === WORDS.length) {
-                        alert('Parabéns! Você encontrou todas as palavras!');
+                    if (!wordFound) {
+                        selectedCells.forEach(function(cell) {
+                            cell.classList.remove('selected');
+                        });
                     }
 
-                    selectedCells.forEach(function(cell) {
-                        cell.classList.remove('selected');
-                    });
+                    if (foundWords.length === WORDS.length) {
+                        setTimeout(function() {
+                            alert('Parabéns! Você encontrou todas as palavras!');
+                        }, 500);
+                    }
+
                     selectedCells = [];
                 }
-            });
+            }
+
+            // Eventos de mouse
+            wordGrid.addEventListener('mousedown', startSelection);
+            wordGrid.addEventListener('mousemove', continueSelection);
+            document.addEventListener('mouseup', endSelection);
+
+            // Eventos de touch
+            wordGrid.addEventListener('touchstart', startSelection);
+            wordGrid.addEventListener('touchmove', continueSelection);
+            wordGrid.addEventListener('touchend', endSelection);
+            wordGrid.addEventListener('touchcancel', endSelection);
         }
 
         createGrid();
