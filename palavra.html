@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Caça-Palavras</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .h1-box {
+            width: 65vw;
+            margin: 0.5vw;
+            background-color: #1e1e1e;
+            border-radius: 1vw;
+        }
+        h1 {
+            display: flex;
+            width: 65vw;
+            margin: 0;
+            font-weight: 800;
+            justify-content: center;
+            color: #d9d9d9;
+            padding: 0.01vw;
+        }
+        .game-container {
+            display: flex;
+            gap: 20px;
+            padding: 2vw;
+            background-color: #fff;
+            border-radius: 1vw;
+        }
+        .word-grid {
+            display: grid;
+            grid-template-columns: repeat(11, 40px);
+            grid-gap: 6.5px;
+            background-color: #1e1e1e;
+            border-radius: 1vw;
+            padding: 1vw;
+        }
+        .grid-cell {
+            font-weight: 700;
+            color: #1e1e1e;
+            width: 40px;
+            height: 40px;
+            background-color: #d9d9d9;
+            border-radius: 0.5vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .grid-cell.selected {
+            color: #d9d9d9;
+            background-color: #7048e8;
+        }
+        .grid-cell.found {
+            background-color: #7048e8a1;
+        }
+        .images-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .image-box {
+            width: 120px;
+            height: 120px;
+            border: 3px solid #333;
+            border-radius: 1vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .image-box.found::after {
+            content: '';
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border-radius: 0.9vw;
+            color: rgb(36, 242, 0);
+            background-color: #7048e8a1;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border: 3px solid #333;
+            border-radius: 1vw;
+        }
+    </style>
+</head>
+<body>
+    <div class="h1-box"><h1>CAÇA-PALAVRAS</h1></div>
+    <div class="game-container">
+        <div id="wordGrid" class="word-grid"></div>
+        <div class="images-container" id="imagesContainer"></div>
+    </div>
+
+    <script>
+        var WORDS = ['PANETONE', 'BOLO', 'BALEIA', 'PNEU', 'CABIDE', 'PANELA', 'ABELHA', 'PIPOCA', 'ABACAXI', 'PENA'];
+        
+        var GRID_LETTERS = [
+            'M','W','N','B','V','W','O','E','A','P','P',
+            'U','T','Y','I','H','O','H','B','B','N','B',
+            'D','W','F','T','P','K','V','O','E','E','A',
+            'P','A','N','E','L','A','M','L','L','U','B',
+            'C','T','D','O','C','N','H','O','H','X','A',
+            'A','H','S','W','L','E','U','B','A','C','C',
+            'B','F','Y','C','M','X','K','X','M','W','A',
+            'I','P','A','N','E','T','O','N','E','V','X',
+            'D','Z','B','A','L','E','I','A','T','V','I',
+            'E','V','P','I','P','O','C','A','V','E','O',
+            'R','S','P','E','N','A','V','M','W','G','V'
+        ];
+
+        function createGrid() {
+            var grid = document.getElementById('wordGrid');
+            for (var i = 0; i < GRID_LETTERS.length; i++) {
+                var cell = document.createElement('div');
+                cell.className = 'grid-cell';
+                cell.textContent = GRID_LETTERS[i];
+                cell.setAttribute('data-index', i);
+                grid.appendChild(cell);
+            }
+        }
+
+        function createImages() {
+            var container = document.getElementById('imagesContainer');
+            for (var i = 0; i < WORDS.length; i++) {
+                var box = document.createElement('div');
+                box.className = 'image-box';
+                box.setAttribute('data-word', WORDS[i]);
+
+                var img = document.createElement('img');
+                img.src = '/img/' + WORDS[i] + '.webp';
+                img.alt = WORDS[i];
+
+                box.appendChild(img);
+                container.appendChild(box);
+            }
+        }
+
+        function initGame() {
+            var selectedCells = [];
+            var foundWords = [];
+
+            document.getElementById('wordGrid').addEventListener('mousedown', function(e) {
+                if (e.target.classList.contains('grid-cell')) {
+                    selectedCells = [e.target];
+                    e.target.classList.add('selected');
+                }
+            });
+
+            document.getElementById('wordGrid').addEventListener('mouseover', function(e) {
+                if (selectedCells.length > 0 && e.target.classList.contains('grid-cell')) {
+                    if (selectedCells.indexOf(e.target) === -1) {
+                        e.target.classList.add('selected');
+                        selectedCells.push(e.target);
+                    }
+                }
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (selectedCells.length > 0) {
+                    var selectedWord = selectedCells.map(function(cell) { 
+                        return cell.textContent; 
+                    }).join('');
+
+                    var reversedWord = selectedWord.split('').reverse().join('');
+
+                    for (var i = 0; i < WORDS.length; i++) {
+                        if (selectedWord === WORDS[i] || reversedWord === WORDS[i]) {
+                            foundWords.push(WORDS[i]);
+
+                            selectedCells.forEach(function(cell) {
+                                cell.classList.remove('selected');
+                                cell.classList.add('found');
+                            });
+
+                            var imageBox = document.querySelector('.image-box[data-word="' + WORDS[i] + '"]');
+                            if (imageBox) {
+                                imageBox.classList.add('found');
+                            }
+                            break;
+                        }
+                    }
+
+                    if (foundWords.length === WORDS.length) {
+                        alert('Parabéns! Você encontrou todas as palavras!');
+                    }
+
+                    selectedCells.forEach(function(cell) {
+                        cell.classList.remove('selected');
+                    });
+                    selectedCells = [];
+                }
+            });
+        }
+
+        createGrid();
+        createImages();
+        initGame();
+    </script>
+</body>
+</html>
