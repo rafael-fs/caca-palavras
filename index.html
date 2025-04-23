@@ -16,22 +16,25 @@
             background-color: #f0f0f0;
             padding: 10px;
         }
-        .h1-box {
-            width: 100%;
-            max-width: 600px;
-            margin: 0.5vw;
-            background-color: #1e1e1e;
-            border-radius: 1vw;
-        }
         h1 {
             display: flex;
             width: 100%;
             margin: 0;
             font-weight: 800;
             justify-content: center;
-            color: #d9d9d9;
-            padding: 0.01vw;
-            font-size: clamp(1.5rem, 4vw, 2rem);
+            color: #1e1e1e;
+            padding: 0.5vw;
+            font-size: 2vw;
+        }
+        h2 {
+            display: flex;
+            width: 100%;
+            margin: 0;
+            font-weight: 500;
+            justify-content: center;
+            color: #1e1e1e;
+            padding-bottom: 0.5vw;
+            font-size: 1.5vw;
         }
         .game-container {
             display: flex;
@@ -69,10 +72,7 @@
         }
         .grid-cell.selected {
             color: #d9d9d9;
-            background-color: #7048e8;
-        }
-        .grid-cell.found {
-            background-color: #7048e8a1;
+            background-color: #1e1e1e;
         }
         .images-container {
             display: grid;
@@ -95,10 +95,7 @@
             width: 100%;
             height: 100%;
             border-radius: 0.9vw;
-            color: rgb(36, 242, 0);
-            background-color: #7048e8a1;
-            font-size: 24px;
-            font-weight: bold;
+            opacity: 0.6;
         }
         img {
             width: 100%;
@@ -123,12 +120,13 @@
         @media (max-width: 480px) {
             .images-container {
                 grid-template-columns: repeat(3, 1fr);
-            }
+            }           
         }
     </style>
 </head>
 <body>
     <div class="h1-box"><h1>CAÇA-PALAVRAS</h1></div>
+    <div class="h2-descrip"><h2>Encontre as palavras no caça-palavras conforme as imagens abaixo.</h2></div>
     <div class="game-container">
         <div id="wordGrid" class="word-grid"></div>
         <div class="images-container" id="imagesContainer"></div>
@@ -136,6 +134,20 @@
 
     <script>
         var WORDS = ['PANETONE', 'BOLO', 'BALEIA', 'PNEU', 'CABIDE', 'PANELA', 'ABELHA', 'PIPOCA', 'ABACAXI', 'PENA'];
+        
+        // Cores diferentes para cada palavra encontrada
+        var COLORS = [
+            '#FF5252', // Vermelho
+            '#FF9800', // Laranja
+            '#FFEB3B', // Amarelo
+            '#4CAF50', // Verde
+            '#2196F3', // Azul
+            '#ff8f2d', // Laranja fraco
+            '#E91E63', // Rosa
+            '#00BCD4', // Ciano
+            '#795548', // Marrom
+            '#607D8B'  // Azul acinzentado
+        ];
         
         var GRID_LETTERS = [
             'M','W','N','B','V','W','O','E','A','P','P',
@@ -168,6 +180,7 @@
                 var box = document.createElement('div');
                 box.className = 'image-box';
                 box.setAttribute('data-word', WORDS[i]);
+                box.setAttribute('data-color-index', i % COLORS.length);
 
                 var img = document.createElement('img');
                 img.src = 'img/' + WORDS[i] + '.webp';
@@ -183,6 +196,9 @@
             var foundWords = [];
             var isSelecting = false;
             var wordGrid = document.getElementById('wordGrid');
+            
+            // Mapa para armazenar células por palavra encontrada
+            var foundCellsByWord = {};
 
             // Função para começar a seleção
             function startSelection(e) {
@@ -243,16 +259,32 @@
                     for (var i = 0; i < WORDS.length; i++) {
                         if (selectedWord === WORDS[i] || reversedWord === WORDS[i]) {
                             wordFound = true;
-                            foundWords.push(WORDS[i]);
-
+                            var foundWord = WORDS[i];
+                            foundWords.push(foundWord);
+                            
+                            // Obtém o índice de cor para a palavra
+                            var colorIndex = i % COLORS.length;
+                            var wordColor = COLORS[colorIndex];
+                            
+                            // Armazena as células desta palavra
+                            foundCellsByWord[foundWord] = selectedCells.slice();
+                            
+                            // Remove a classe 'selected' e aplica a cor específica
                             selectedCells.forEach(function(cell) {
                                 cell.classList.remove('selected');
-                                cell.classList.add('found');
+                                cell.style.backgroundColor = wordColor;
+                                cell.style.color = '#ffffff'; // Texto branco para melhor contraste
                             });
 
-                            var imageBox = document.querySelector('.image-box[data-word="' + WORDS[i] + '"]');
+                            // Aplica a mesma cor à imagem correspondente
+                            var imageBox = document.querySelector('.image-box[data-word="' + foundWord + '"]');
                             if (imageBox) {
                                 imageBox.classList.add('found');
+                                // Aplica a cor como background do pseudo-elemento ::after
+                                imageBox.style.setProperty('--word-color', wordColor);
+                                var afterStyle = document.createElement('style');
+                                afterStyle.textContent = `.image-box[data-word="${foundWord}"].found::after { background-color: ${wordColor}; }`;
+                                document.head.appendChild(afterStyle);
                             }
                             break;
                         }
